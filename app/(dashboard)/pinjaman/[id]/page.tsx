@@ -34,6 +34,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
+import { PaymentDialog } from "@/components/loan/payment-dialog"
 
 export default function LoanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params)
@@ -41,6 +42,8 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
   const [loan, setLoan] = React.useState<any>(null)
   const [installments, setInstallments] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = React.useState(false)
+  const [selectedInstallment, setSelectedInstallment] = React.useState<any>(null)
 
   React.useEffect(() => {
     async function load() {
@@ -101,6 +104,19 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
   const remainingBalance = Number(loan.principal) - installments.filter(i => i.paid_at !== null).reduce((acc, i) => acc + Number(i.principal_amount), 0)
   const monthlyPayment = installments.length > 0 ? Number(installments[0].principal_amount) + Number(installments[0].interest_amount) : 0
 
+  const handlePayNext = () => {
+    const nextUnpaid = installments.find(i => i.paid_at === null)
+    if (nextUnpaid) {
+      setSelectedInstallment(nextUnpaid)
+      setIsPaymentDialogOpen(true)
+    }
+  }
+
+  const handlePaySpecific = (inst: any) => {
+    setSelectedInstallment(inst)
+    setIsPaymentDialogOpen(true)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -119,7 +135,7 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
               <Printer className="mr-2 h-4 w-4" />
               Cetak Transaksi
            </Button>
-           <Button>
+           <Button onClick={handlePayNext} disabled={!installments.some(i => i.paid_at === null)}>
               <CreditCard className="mr-2 h-4 w-4" />
               Bayar Angsuran
            </Button>
@@ -210,7 +226,8 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
                            <TableHead>Bunga</TableHead>
                            <TableHead>Total</TableHead>
                            <TableHead>Status</TableHead>
-                           <TableHead className="text-right">Tgl Bayar</TableHead>
+                           <TableHead>Tgl Bayar</TableHead>
+                           <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                      </TableHeader>
                      <TableBody>
@@ -228,8 +245,15 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
                                     <Badge variant="outline" className="text-amber-600 border-amber-300">Belum Bayar</Badge>
                                  )}
                               </TableCell>
-                              <TableCell className="text-right text-xs text-muted-foreground font-mono">
+                              <TableCell className="text-xs text-muted-foreground font-mono">
                                  {inst.paid_at ? new Date(inst.paid_at).toLocaleDateString('id-ID') : "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                 {!inst.paid_at && (
+                                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handlePaySpecific(inst)}>
+                                       Bayar
+                                    </Button>
+                                 )}
                               </TableCell>
                            </TableRow>
                         )) : (
@@ -245,6 +269,20 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
             </CardContent>
          </Card>
       </div>
+
+      <PaymentDialog 
+        isOpen={isPaymentDialogOpen}
+        onClose={() => {
+          setIsPaymentDialogOpen(false)
+          setSelectedInstallment(null)
+          // Refresh data (useEffect will trigger if we refresh the page or use router.refresh but for client side state we might need more)
+          // However, the recordInstallmentPayment action calls revalidatePath, 
+          // but we are using client-side fetching here. Let's add a manual reload or update state.
+          window.location.reload()
+        }}
+        installment={selectedInstallment}
+        memberName={loan.members?.full_name || '-'}
+      />
     </div>
   )
 }

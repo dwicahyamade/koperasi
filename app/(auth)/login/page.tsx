@@ -75,24 +75,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/20 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/20 blur-[120px]" />
-      </div>
-
-      <Card className="relative z-10 w-full max-w-md border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
+    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
+      <Card className="w-full max-w-md shadow-lg border-border">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 rounded-2xl bg-primary shadow-lg shadow-primary/20">
-              <Landmark className="h-8 w-8 text-white" />
+            <div className="p-3 rounded-2xl bg-primary shadow-sm">
+              <Landmark className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold tracking-tight text-white">
+          <CardTitle className="text-3xl font-bold tracking-tight">
             Cingkreman Olas Asih
           </CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardDescription>
             Masuk ke sistem kelola koperasi
           </CardDescription>
         </CardHeader>
@@ -104,13 +98,13 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-slate-300">Email</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           placeholder="admin@koperasi.com"
-                          className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-slate-600 focus-visible:ring-indigo-500"
+                          className="pl-9"
                           disabled={isLoading}
                           {...field}
                         />
@@ -125,14 +119,14 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-slate-300">Password</FormLabel>
+                    <FormLabel>Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           type="password"
                           placeholder="••••••••"
-                          className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-slate-600 focus-visible:ring-indigo-500"
+                          className="pl-9"
                           disabled={isLoading}
                           {...field}
                         />
@@ -144,7 +138,7 @@ export default function LoginPage() {
               />
               <Button
                 type="submit"
-                className="w-full h-11 text-base font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] bg-indigo-600 hover:bg-indigo-500"
+                className="w-full h-11 text-base font-semibold"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -159,11 +153,6 @@ export default function LoginPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter>
-          <p className="w-full text-center text-xs text-slate-500 uppercase tracking-widest">
-            Handcrafted for visual excellence
-          </p>
-        </CardFooter>
       </Card>
     </div>
   )
