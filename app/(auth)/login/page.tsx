@@ -90,7 +90,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-3xl font-bold tracking-tight text-white">
-            KSP Modern
+            Cingkreman Olas Asih
           </CardTitle>
           <CardDescription className="text-slate-400">
             Masuk ke sistem kelola koperasi
