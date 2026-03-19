@@ -38,7 +38,10 @@ export async function addSavingsTransaction(formData: any) {
 
 export async function getSavingsProducts() {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('savings_products').select('*')
+  const { data, error } = await supabase
+    .from('savings_products')
+    .select('*')
+    .order('created_at', { ascending: true })
   if (error) throw new Error(error.message)
   return data
 }
@@ -57,4 +60,28 @@ export async function getSavingsReport(memberId?: string) {
   const { data, error } = await query
   if (error) throw new Error(error.message)
   return data
+}
+
+export async function createSavingsProduct(data: any) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('savings_products').insert([data])
+  if (error) throw new Error(error.message)
+  revalidatePath('/(dashboard)/pengaturan/produk')
+  return { success: true }
+}
+
+export async function updateSavingsProduct(id: string, data: any) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('savings_products').update(data).eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/(dashboard)/pengaturan/produk')
+  return { success: true }
+}
+
+export async function deleteSavingsProduct(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('savings_products').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/(dashboard)/pengaturan/produk')
+  return { success: true }
 }

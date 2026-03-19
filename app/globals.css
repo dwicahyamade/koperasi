@@ -126,4 +126,15 @@
   html {
     @apply font-sans;
   }
+  button, 
+  [role="button"],
+  [type="button"],
+  [type="reset"],
+  [type="submit"],
+  label[for],
+  select,
+  summary,
+  [tabindex]:not([tabindex="-1"]) {
+    cursor: pointer;
+  }
 }

@@ -155,7 +155,34 @@ export async function recordInstallmentPayment(installmentId: string, amount: nu
 
 export async function getLoanProducts() {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('loan_products').select('*')
+  const { data, error } = await supabase
+    .from('loan_products')
+    .select('*')
+    .order('created_at', { ascending: true })
   if (error) throw new Error(error.message)
   return data
+}
+
+export async function createLoanProduct(data: any) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('loan_products').insert([data])
+  if (error) throw new Error(error.message)
+  revalidatePath('/(dashboard)/pengaturan/produk')
+  return { success: true }
+}
+
+export async function updateLoanProduct(id: string, data: any) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('loan_products').update(data).eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/(dashboard)/pengaturan/produk')
+  return { success: true }
+}
+
+export async function deleteLoanProduct(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('loan_products').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/(dashboard)/pengaturan/produk')
+  return { success: true }
 }
