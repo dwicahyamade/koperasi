@@ -14,6 +14,7 @@ import {
   LogOut,
   ChevronRight,
   UserCircle,
+  Download,
 } from "lucide-react"
 
 import {
@@ -113,6 +114,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     email: "",
   })
   const { setOpenMobile } = useSidebar()
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null)
+  const [isInstallable, setIsInstallable] = React.useState(false)
 
   React.useEffect(() => {
     async function loadUser() {
@@ -133,7 +136,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
     }
     loadUser()
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setIsInstallable(true)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
   }, [])
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return
+
+    deferredPrompt.prompt()
+
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt')
+      setIsInstallable(false)
+    } else {
+      console.log('User dismissed the install prompt')
+    }
+    setDeferredPrompt(null)
+  }
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -209,6 +239,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          {isInstallable && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={handleInstallClick}
+                className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary transition-colors"
+                size="lg"
+              >
+                <Download className="mr-2 size-4" />
+                <span className="font-semibold">Install Aplikasi (PWA)</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger
