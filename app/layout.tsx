@@ -13,6 +13,22 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Koperasi Simpan Pinjam",
   description: "Sistem Informasi KSP Modern",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Koperasi",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  themeColor: "#2563eb",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
