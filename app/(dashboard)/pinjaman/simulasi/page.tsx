@@ -40,6 +40,11 @@ export default function LoanSimulatorPage() {
   const [amount, setAmount] = React.useState("5000000")
   const [tenor, setTenor] = React.useState("12")
   const [interestRate, setInterestRate] = React.useState("1.5")
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
   
   const results = React.useMemo(() => {
     const p = parseFloat(amount || "0")
@@ -77,6 +82,7 @@ export default function LoanSimulatorPage() {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(val)
   }
 
@@ -145,30 +151,30 @@ export default function LoanSimulatorPage() {
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0 w-full">
           <div className="grid gap-4 sm:grid-cols-3">
              <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
                 <p className="text-xs text-muted-foreground font-bold uppercase">Angsuran / Bulan</p>
-                <p className="text-xl font-black text-primary">{results ? formatIDR(results.monthly) : "Rp 0"}</p>
+                <p className="text-xl font-black text-primary">{mounted && results ? formatIDR(results.monthly) : "Rp 0"}</p>
              </div>
              <div className="p-4 rounded-xl bg-muted/50 border">
                 <p className="text-xs text-muted-foreground font-bold uppercase">Total Bunga</p>
-                <p className="text-xl font-bold">{results ? formatIDR(results.totalInterest) : "Rp 0"}</p>
+                <p className="text-xl font-bold">{mounted && results ? formatIDR(results.totalInterest) : "Rp 0"}</p>
              </div>
              <div className="p-4 rounded-xl bg-muted/50 border">
                 <p className="text-xs text-muted-foreground font-bold uppercase">Total Pengembalian</p>
-                <p className="text-xl font-bold">{results ? formatIDR(results.totalPayment) : "Rp 0"}</p>
+                <p className="text-xl font-bold">{mounted && results ? formatIDR(results.totalPayment) : "Rp 0"}</p>
              </div>
           </div>
 
-          <Card className="shadow-md">
+          <Card className="shadow-md overflow-x-hidden w-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-base font-bold">Jadwal Angsuran (Estimasi)</CardTitle>
               <Badge variant="outline" className="font-mono">Flat Interest</Badge>
             </CardHeader>
             <CardContent>
-              <div className="max-h-[400px] overflow-auto rounded-md border">
-                <Table>
+              <div className="rounded-md border">
+                <Table className="overflow-x-auto">
                   <TableHeader className="bg-muted/50 sticky top-0">
                     <TableRow>
                       <TableHead className="w-16">Bulan</TableHead>
@@ -182,10 +188,10 @@ export default function LoanSimulatorPage() {
                     {results?.schedule.map((item) => (
                       <TableRow key={item.month}>
                         <TableCell className="font-medium">#{item.month}</TableCell>
-                        <TableCell>{formatIDR(item.principal)}</TableCell>
-                        <TableCell>{formatIDR(item.interest)}</TableCell>
-                        <TableCell className="font-bold">{formatIDR(item.total)}</TableCell>
-                        <TableCell className="text-right font-mono text-xs">{formatIDR(item.remaining)}</TableCell>
+                        <TableCell>{mounted ? formatIDR(item.principal) : "Rp 0"}</TableCell>
+                        <TableCell>{mounted ? formatIDR(item.interest) : "Rp 0"}</TableCell>
+                        <TableCell className="font-bold">{mounted ? formatIDR(item.total) : "Rp 0"}</TableCell>
+                        <TableCell className="text-right font-mono text-xs">{mounted ? formatIDR(item.remaining) : "Rp 0"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

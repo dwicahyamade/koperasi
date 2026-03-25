@@ -93,18 +93,18 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
-          <ChevronLeft className="h-4 w-4" />
+      <div className="flex flex-wrap items-center gap-4">
+        <Button variant="outline" size="icon" onClick={() => router.back()} className="order-2 md:order-1">
+          <ChevronLeft className="h-4 w-4 " />
         </Button>
-        <div>
+        <div className="order-1 w-full md:w-auto">
           <h1 className="text-3xl font-bold tracking-tight">{member.full_name}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-muted-foreground font-mono">{member.kta_number}</span>
             <StatusBadge status={member.status} />
           </div>
         </div>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex order-3 md:order-1 gap-2">
           <Button variant="outline">
             <Edit className="mr-2 h-4 w-4" />
             Edit Profile

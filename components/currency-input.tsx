@@ -14,6 +14,12 @@ export function CurrencyInput({
   className,
   ...props
 }: CurrencyInputProps) {
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const formatValue = (val: string | number) => {
     if (!val) return ""
     const num = typeof val === "number" ? val : parseFloat(val.replace(/\D/g, ""))
@@ -22,6 +28,7 @@ export function CurrencyInput({
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(num)
   }
 
@@ -30,7 +37,7 @@ export function CurrencyInput({
     onValueChange(rawValue)
   }
 
-  const displayValue = formatValue(value)
+  const displayValue = mounted ? formatValue(value) : ""
 
   return (
     <div className="relative">
