@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Input } from "@/components/ui/input"
+import { formatIDR } from "@/lib/utils"
 
 interface CurrencyInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   value: string | number
@@ -24,12 +25,7 @@ export function CurrencyInput({
     if (!val) return ""
     const num = typeof val === "number" ? val : parseFloat(val.replace(/\D/g, ""))
     if (isNaN(num)) return ""
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(num)
+    return formatIDR(num)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

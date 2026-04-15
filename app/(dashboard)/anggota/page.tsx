@@ -7,7 +7,7 @@ import { Plus, MoreHorizontal, Eye, Edit, Trash } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import { DataTable } from "@/components/data-table"
-import { cn } from "@/lib/utils"
+import { cn, formatIDR } from "@/lib/utils"
 import { StatusBadge } from "@/components/status-badge"
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ import {
 import { Member } from "@/lib/types/database"
 import { getMembers } from "@/lib/actions/members"
 
-const columns: ColumnDef<Member>[] = [
+const columns: ColumnDef<any>[] = [
   {
     accessorKey: "kta_number",
     header: "KTA",
@@ -37,6 +37,36 @@ const columns: ColumnDef<Member>[] = [
   {
     accessorKey: "phone",
     header: "Telepon",
+  },
+  {
+    id: "simpanan_pokok",
+    header: "Simp. Pokok",
+    cell: ({ row }) => {
+      const txs = row.original.savings_transactions;
+      if (!txs) return "-";
+      const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("pokok")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
+      return total ? formatIDR(total) : "-";
+    }
+  },
+  {
+    id: "simpanan_wajib",
+    header: "Simp. Wajib",
+    cell: ({ row }) => {
+      const txs = row.original.savings_transactions;
+      if (!txs) return "-";
+      const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("wajib")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
+      return total ? formatIDR(total) : "-";
+    }
+  },
+  {
+    id: "simpanan_sukarela",
+    header: "Simp. Sukarela",
+    cell: ({ row }) => {
+      const txs = row.original.savings_transactions;
+      if (!txs) return "-";
+      const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("sukarela")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
+      return total ? formatIDR(total) : "-";
+    }
   },
   {
     accessorKey: "status",
@@ -90,14 +120,14 @@ const columns: ColumnDef<Member>[] = [
 ]
 
 export default function MembersPage() {
-  const [members, setMembers] = React.useState<Member[]>([])
+  const [members, setMembers] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     async function load() {
       try {
         const data = await getMembers()
-        setMembers(data as Member[])
+        setMembers(data)
       } catch (err) {
         console.error("Failed to load members:", err)
       } finally {

@@ -9,6 +9,28 @@ export async function addSavingsTransaction(formData: any) {
   // 1. Get the current user for created_by
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Validate Simpanan Pokok: Only 1x per member for deposit
+  if (formData.type === 'deposit') {
+    const { data: product } = await supabase
+      .from('savings_products')
+      .select('name')
+      .eq('id', formData.product_id)
+      .single()
+
+    if (product && product.name.toLowerCase().includes('pokok')) {
+      const { data: existingDeposits } = await supabase
+        .from('savings_transactions')
+        .select('id')
+        .eq('member_id', formData.member_id)
+        .eq('product_id', formData.product_id)
+        .eq('type', 'deposit')
+
+      if (existingDeposits && existingDeposits.length > 0) {
+        throw new Error("Anggota ini sudah memiliki catatan setoran untuk Simpanan Pokok. Simpanan Pokok hanya dapat disetor 1x.")
+      }
+    }
+  }
+
   // 2. Insert into savings_transactions
   const { data: transaction, error: transError } = await supabase
     .from('savings_transactions')
@@ -20,6 +42,7 @@ export async function addSavingsTransaction(formData: any) {
         amount: formData.amount,
         notes: formData.notes,
         created_by: user?.id,
+        ...(formData.date ? { created_at: new Date(`${formData.date}T12:00:00Z`).toISOString() } : {}),
       },
     ])
     .select()
@@ -46,7 +69,7 @@ export async function getSavingsProducts() {
   return data
 }
 
-export async function getSavingsReport(memberId?: string) {
+export async function getSavingsReport(memberId?: string, startDate?: string, endDate?: string) {
   const supabase = await createClient()
   let query = supabase
     .from('savings_transactions')
@@ -57,10 +80,23 @@ export async function getSavingsReport(memberId?: string) {
     query = query.eq('member_id', memberId)
   }
 
+  if (startDate) {
+    query = query.gte('created_at', startDate)
+  }
+
+  if (endDate) {
+    // Add one day to include the whole end day
+    const nextDay = new Date(endDate)
+    nextDay.setDate(nextDay.getDate() + 1)
+    const nextDayStr = nextDay.toISOString().split('T')[0]
+    query = query.lt('created_at', nextDayStr)
+  }
+
   const { data, error } = await query
   if (error) throw new Error(error.message)
   return data
 }
+
 
 export async function createSavingsProduct(data: any) {
   const supabase = await createClient()

@@ -38,7 +38,7 @@ import {
 import { getSavingsProducts } from "@/lib/actions/savings"
 import { getLoanProducts } from "@/lib/actions/loans"
 
-import { cn } from "@/lib/utils"
+import { cn, formatIDR } from "@/lib/utils"
 import { SavingsProductDialog } from "@/components/settings/savings-product-dialog"
 import { LoanProductDialog } from "@/components/settings/loan-product-dialog"
 import { DeleteProductDialog } from "@/components/settings/delete-product-dialog"
@@ -77,13 +77,7 @@ export default function ProductSettingsPage() {
     load()
   }, [load])
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val)
-  }
+
 
   return (
     <div className="space-y-6">

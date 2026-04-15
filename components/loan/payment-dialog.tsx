@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { InfoIcon, Loader2 } from "lucide-react"
 import { recordInstallmentPayment } from "@/lib/actions/loans"
+import { formatIDR } from "@/lib/utils"
 
 interface PaymentDialogProps {
   isOpen: boolean
@@ -35,13 +36,7 @@ export function PaymentDialog({ isOpen, onClose, installment, memberName }: Paym
 
   const totalAmount = Number(installment.principal_amount) + Number(installment.interest_amount)
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val)
-  }
+
 
   const handleConfirm = async () => {
     setIsSubmitting(true)

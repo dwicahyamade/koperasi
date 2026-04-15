@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { formatIDR } from "@/lib/utils"
 import { StatCard } from "@/components/stat-card"
 import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
@@ -48,13 +49,7 @@ export default function CashBookPage() {
     load()
   }, [])
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val)
-  }
+
 
   // Calculate stats from real data
   const totalIn = entries.filter(e => e.type === 'in').reduce((acc, e) => acc + Number(e.amount), 0)

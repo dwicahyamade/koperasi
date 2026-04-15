@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
+import { formatIDR } from "@/lib/utils"
 import { DataTable } from "@/components/data-table"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "@/components/status-badge"
@@ -65,13 +66,7 @@ export default function LoansPage() {
     loadLoans()
   }, [])
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val)
-  }
+
 
   const handleApprove = async (loanId: string) => {
     try {

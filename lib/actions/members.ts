@@ -57,7 +57,7 @@ export async function getMembers() {
 
   const { data, error } = await supabase
     .from('members')
-    .select('*')
+    .select('*, savings_transactions(amount, type, savings_products(name))')
     .order('created_at', { ascending: false })
 
   if (error) {

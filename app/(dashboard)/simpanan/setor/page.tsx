@@ -35,6 +35,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { MemberCombobox } from "@/components/member-combobox"
 import { CurrencyInput } from "@/components/currency-input"
+import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { cn } from "@/lib/utils"
 import { addSavingsTransaction, getSavingsProducts } from "@/lib/actions/savings"
 
@@ -50,7 +52,16 @@ const formSchema = z.object({
     message: "Harap masukkan nominal.",
   }),
   notes: z.string().optional(),
+  date: z.string().min(1, {
+    message: "Harap pilih tanggal.",
+  }),
 })
+
+const getTodayDateString = () => {
+  const date = new Date()
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+  return date.toISOString().split('T')[0]
+}
 
 export default function SavingsTransactionPage() {
   const router = useRouter()
@@ -77,6 +88,7 @@ export default function SavingsTransactionPage() {
       product_id: "",
       amount: "",
       notes: "",
+      date: getTodayDateString(),
     },
   })
 
@@ -90,6 +102,7 @@ export default function SavingsTransactionPage() {
         type: values.type,
         amount: parseFloat(values.amount),
         notes: values.notes || null,
+        date: values.date,
       })
       
       const typeLabel = values.type === "deposit" ? "Setoran" : "Penarikan"
@@ -188,6 +201,31 @@ export default function SavingsTransactionPage() {
                 />
 
                 <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Tanggal Transaksi</FormLabel>
+                        <FormControl>
+                          <DatePicker 
+                            value={field.value ? new Date(field.value) : undefined} 
+                            onChange={(date) => {
+                              if (date) {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                field.onChange(`${year}-${month}-${day}`);
+                              }
+                            }}
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="product_id"

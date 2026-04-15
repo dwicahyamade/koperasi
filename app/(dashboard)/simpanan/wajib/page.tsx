@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { formatIDR } from "@/lib/utils"
 import { StatCard } from "@/components/stat-card"
 import { DataTable } from "@/components/data-table"
 import {
@@ -118,13 +119,7 @@ export default function MandatorySavingsPage() {
     }
   }
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val)
-  }
+
 
   const currentMonth = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 

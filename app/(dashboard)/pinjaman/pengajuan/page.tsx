@@ -34,6 +34,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { MemberCombobox } from "@/components/member-combobox"
 import { CurrencyInput } from "@/components/currency-input"
+import { formatIDR } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { requestLoan, getLoanProducts } from "@/lib/actions/loans"
 
@@ -104,13 +105,7 @@ export default function LoanApplicationPage() {
     }
   }, [amount, tenor, interestRate])
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val)
-  }
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)

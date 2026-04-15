@@ -34,6 +34,7 @@ import {
 import { StatusBadge } from "@/components/status-badge"
 import { StatCard } from "@/components/stat-card"
 import { getMemberDetail } from "@/lib/actions/members"
+import { formatIDR } from "@/lib/utils"
 import { Member } from "@/lib/types/database"
 
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -73,18 +74,21 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val)
-  }
 
-  // Calculate savings totals from real data
-  const savingsTotal = member.savings?.reduce((acc: number, tx: any) => {
-    return tx.type === 'deposit' ? acc + Number(tx.amount) : acc - Number(tx.amount)
-  }, 0) || 0
+
+  // Calculate savings totals by product
+  const savingsByProduct = member.savings?.reduce((acc: any, tx: any) => {
+    const productName = tx.savings_products?.name || "Lain-lain"
+    if (!acc[productName]) acc[productName] = 0
+    if (tx.type === 'deposit') {
+      acc[productName] += Number(tx.amount)
+    } else {
+      acc[productName] -= Number(tx.amount)
+    }
+    return acc
+  }, {}) || {}
+
+  const savingsTotal = Object.values(savingsByProduct).reduce((sum: number, val: any) => sum + val, 0) as number
 
   // Calculate active loans total
   const activeLoansTotal = member.loans
@@ -157,12 +161,23 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
         {/* Stats and Tabs */}
         <div className="md:col-span-2 space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard
-              title="Total Simpanan"
-              value={formatIDR(savingsTotal)}
-              icon={Wallet}
-              className="bg-primary/5 border-primary/20 shadow-none text-primary"
-            />
+            <Card className="bg-primary/5 border-primary/20 shadow-none text-primary p-6 flex flex-col">
+              <div className="flex items-center gap-2 text-sm font-medium mb-2 opacity-80">
+                <Wallet className="h-4 w-4" />
+                Total Simpanan
+              </div>
+              <div className="text-2xl font-bold">{formatIDR(savingsTotal)}</div>
+              {Object.keys(savingsByProduct).length > 0 && (
+                <div className="mt-4 pt-4 border-t border-primary/10 space-y-2 flex-1 flex flex-col justify-end">
+                  {Object.entries(savingsByProduct).map(([productName, amount]: any, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                       <span className="opacity-80">{productName}</span>
+                       <span className="font-semibold">{formatIDR(amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
             <StatCard
               title="Pinjaman Berjalan"
               value={formatIDR(activeLoansTotal)}

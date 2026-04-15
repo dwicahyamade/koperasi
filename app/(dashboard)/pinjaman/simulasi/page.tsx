@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { formatIDR } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -77,14 +78,7 @@ export default function LoanSimulatorPage() {
     }
   }, [amount, tenor, interestRate])
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(val)
-  }
+
 
   return (
     <div className="space-y-6">
