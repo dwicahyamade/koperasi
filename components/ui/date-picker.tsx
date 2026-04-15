@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-interface DatePickerProps {
+interface DatePickerProps extends Omit<React.ComponentProps<typeof PopoverTrigger>, 'value' | 'onChange'> {
   value?: Date | string
   onChange?: (date?: Date) => void
   placeholder?: string
@@ -27,7 +27,7 @@ export function DatePicker({
   placeholder = "Pilih tanggal", 
   disabled,
   ...props 
-}: DatePickerProps & React.ComponentProps<typeof PopoverTrigger>) {
+}: DatePickerProps) {
   const date = typeof value === "string" ? (value ? new Date(value) : undefined) : value
 
   return (
