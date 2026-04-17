@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
+import { cn, formatIDR } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -36,6 +37,9 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { getSavingsProducts } from "@/lib/actions/savings"
+import { SavingsProductDialog } from "@/components/savings/savings-product-dialog"
+import { DeleteProductDialog } from "@/components/settings/delete-product-dialog"
+
 export default function ProductSettingsPage() {
   const [savingsProducts, setSavingsProducts] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -166,7 +170,7 @@ export default function ProductSettingsPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         product={selectedProduct}
-        type={activeTab as any}
+        type="savings"
         onSuccess={load}
       />
     </div>
