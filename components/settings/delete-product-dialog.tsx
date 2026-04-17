@@ -16,13 +16,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { deleteSavingsProduct } from "@/lib/actions/savings"
-import { deleteLoanProduct } from "@/lib/actions/loans"
 
 interface DeleteProductDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   product: any
-  type: "savings" | "loans"
+  type: "savings"
   onSuccess: () => void
 }
 
@@ -38,11 +37,7 @@ export function DeleteProductDialog({
   async function onDelete() {
     setIsLoading(true)
     try {
-      if (type === "savings") {
-        await deleteSavingsProduct(product.id)
-      } else {
-        await deleteLoanProduct(product.id)
-      }
+      await deleteSavingsProduct(product.id)
       toast.success("Produk Berhasil Dihapus")
       onSuccess()
       onOpenChange(false)

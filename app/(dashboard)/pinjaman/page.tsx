@@ -29,6 +29,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,7 +51,7 @@ export default function LoansPage() {
     try {
       const { data, error } = await supabase
         .from('loans')
-        .select('*, members(full_name), loan_products(name)')
+        .select('*, members(full_name)')
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -99,10 +100,15 @@ export default function LoansPage() {
       )
     },
     { 
-      accessorKey: "members", 
-      header: "Anggota",
+      accessorKey: "borrower_name", 
+      header: "Peminjam",
       cell: ({ row }: { row: any }) => (
-        <span className="font-medium">{row.original.members?.full_name || '-'}</span>
+        <div className="flex flex-col">
+          <span className="font-medium text-sm leading-none">{row.getValue("borrower_name") || '-'}</span>
+          <span className="text-[10px] text-muted-foreground mt-1">
+            Anggota: {row.original.members?.full_name || '-'}
+          </span>
+        </div>
       )
     },
     { 
@@ -110,6 +116,15 @@ export default function LoansPage() {
       header: "Nominal",
       cell: ({ row }: { row: any }) => (
         <span className="font-bold">{formatIDR(Number(row.getValue("principal")))}</span>
+      )
+    },
+    { 
+      accessorKey: "interest_type", 
+      header: "Skema",
+      cell: ({ row }: { row: any }) => (
+        <Badge variant="outline" className="capitalize text-[10px]">
+          {row.getValue("interest_type") === 'effective' ? 'Efektif' : 'Flat'}
+        </Badge>
       )
     },
     { 
@@ -219,19 +234,19 @@ export default function LoansPage() {
             ) : (
               <>
                 <TabsContent value="all" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans} searchKey="members" />
+                  <DataTable columns={columns} data={loans} searchKey="borrower_name" />
                 </TabsContent>
                 <TabsContent value="pending" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans.filter(l => l.status === "pending")} searchKey="members" />
+                  <DataTable columns={columns} data={loans.filter(l => l.status === "pending")} searchKey="borrower_name" />
                 </TabsContent>
                 <TabsContent value="approved" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans.filter(l => l.status === "approved")} searchKey="members" />
+                  <DataTable columns={columns} data={loans.filter(l => l.status === "approved")} searchKey="borrower_name" />
                 </TabsContent>
                 <TabsContent value="disbursed" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans.filter(l => l.status === "disbursed")} searchKey="members" />
+                  <DataTable columns={columns} data={loans.filter(l => l.status === "disbursed")} searchKey="borrower_name" />
                 </TabsContent>
                 <TabsContent value="closed" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans.filter(l => l.status === "closed")} searchKey="members" />
+                  <DataTable columns={columns} data={loans.filter(l => l.status === "closed")} searchKey="borrower_name" />
                 </TabsContent>
               </>
             )}

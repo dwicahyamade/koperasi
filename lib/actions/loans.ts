@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { calculateLoanSchedule } from '@/lib/loan-utils'
 
 export async function requestLoan(formData: any) {
   const supabase = await createClient()
@@ -12,9 +13,10 @@ export async function requestLoan(formData: any) {
     .insert([
       {
         member_id: formData.member_id,
-        product_id: formData.product_id,
+        borrower_name: formData.borrower_name,
         principal: formData.principal,
         interest_rate: formData.interest_rate,
+        interest_type: formData.interest_type || 'flat',
         tenor_months: formData.tenor_months,
         status: 'pending',
         created_by: user?.id,
@@ -85,25 +87,6 @@ export async function disburseLoan(loanId: string) {
     },
   ])
 
-  // 4. Generate Installments schedule
-  const installments = []
-  const startDate = new Date()
-  for (let i = 1; i <= loan.tenor_months; i++) {
-    const dueDate = new Date(startDate)
-    dueDate.setMonth(startDate.getMonth() + i)
-    
-    installments.push({
-      loan_id: loan.id,
-      installment_number: i,
-      due_date: dueDate.toISOString().split('T')[0],
-      principal_amount: loan.principal / loan.tenor_months,
-      interest_amount: (loan.principal * (loan.interest_rate / 100)),
-      paid_amount: 0,
-    })
-  }
-
-  await supabase.from('loan_installments').insert(installments)
-
   revalidatePath('/(dashboard)/pinjaman')
   return { success: true }
 }
@@ -153,36 +136,67 @@ export async function recordInstallmentPayment(installmentId: string, amount: nu
   return { success: true }
 }
 
-export async function getLoanProducts() {
+export async function addManualPayment(loanId: string, paidAt: string, principal: number, interest: number) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // 1. Get current count for installment number
+  const { count } = await supabase
+    .from('loan_installments')
+    .select('*', { count: 'exact', head: true })
+    .eq('loan_id', loanId)
+
+  const installmentNumber = (count || 0) + 1
+
+  // 2. Insert record
   const { data, error } = await supabase
-    .from('loan_products')
-    .select('*')
-    .order('created_at', { ascending: true })
-  if (error) throw new Error(error.message)
-  return data
-}
+    .from('loan_installments')
+    .insert([
+      {
+        loan_id: loanId,
+        installment_number: installmentNumber,
+        due_date: paidAt,
+        principal_amount: principal,
+        interest_amount: interest,
+        paid_at: new Date(paidAt).toISOString(),
+        paid_amount: principal + interest,
+        recorded_by: user?.id
+      }
+    ])
+    .select()
+    .single()
 
-export async function createLoanProduct(data: any) {
-  const supabase = await createClient()
-  const { error } = await supabase.from('loan_products').insert([data])
   if (error) throw new Error(error.message)
-  revalidatePath('/(dashboard)/pengaturan/produk')
+
+  // 3. Cash book entry
+  await supabase.from('cash_book').insert([
+    {
+      type: 'in',
+      category: 'loan_installment',
+      amount: principal + interest,
+      description: `Manual payment for loan ${loanId} #${installmentNumber} (P: ${principal}, I: ${interest})`,
+      reference_id: data.id,
+      created_by: user?.id,
+    },
+  ])
+
+  revalidatePath(`/(dashboard)/pinjaman/${loanId}`)
   return { success: true }
 }
 
-export async function updateLoanProduct(id: string, data: any) {
+export async function deleteInstallment(id: string) {
   const supabase = await createClient()
-  const { error } = await supabase.from('loan_products').update(data).eq('id', id)
-  if (error) throw new Error(error.message)
-  revalidatePath('/(dashboard)/pengaturan/produk')
-  return { success: true }
-}
+  
+  // Delete related cash book entry
+  await supabase.from('cash_book').delete().eq('reference_id', id)
 
-export async function deleteLoanProduct(id: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.from('loan_products').delete().eq('id', id)
+  const { error } = await supabase
+    .from('loan_installments')
+    .delete()
+    .eq('id', id)
+
   if (error) throw new Error(error.message)
-  revalidatePath('/(dashboard)/pengaturan/produk')
+
+  revalidatePath('/(dashboard)/pinjaman', 'layout')
   return { success: true }
 }

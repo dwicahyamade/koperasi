@@ -235,9 +235,9 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                     {member.loans.map((loan: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-center text-sm p-3 bg-muted/20 rounded-lg">
                         <div className="flex flex-col">
-                          <span className="font-medium">{loan.loan_products?.name || 'Pinjaman'}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {loan.tenor_months} bulan • {loan.interest_rate}%/bln
+                          <span className="font-medium">{loan.borrower_name || 'Pinjaman'}</span>
+                          <span className="text-xs text-muted-foreground capitalize">
+                            {loan.tenor_months} bln • {loan.interest_rate}%/bln ({loan.interest_type === 'effective' ? 'Efektif' : 'Flat'})
                           </span>
                         </div>
                         <div className="flex items-center gap-3">

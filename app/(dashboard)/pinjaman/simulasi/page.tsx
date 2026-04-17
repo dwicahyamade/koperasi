@@ -13,6 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { formatIDR } from "@/lib/utils"
+import { calculateLoanSchedule, InterestType } from "@/lib/loan-utils"
 import {
   Card,
   CardContent,
@@ -41,6 +42,7 @@ export default function LoanSimulatorPage() {
   const [amount, setAmount] = React.useState("5000000")
   const [tenor, setTenor] = React.useState("12")
   const [interestRate, setInterestRate] = React.useState("1.5")
+  const [interestType, setInterestType] = React.useState<InterestType>("flat")
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -50,33 +52,12 @@ export default function LoanSimulatorPage() {
   const results = React.useMemo(() => {
     const p = parseFloat(amount || "0")
     const t = parseInt(tenor || "0")
-    const i = parseFloat(interestRate || "0") / 100
+    const i = parseFloat(interestRate || "0")
     
     if (!p || !t) return null
     
-    const interestPerMonth = p * i
-    const principalPerMonth = p / t
-    const totalPerMonth = principalPerMonth + interestPerMonth
-    
-    const schedule = Array.from({ length: t }, (_, idx) => {
-      const monthNumber = idx + 1
-      const remainingPrincipal = p - (principalPerMonth * monthNumber)
-      return {
-        month: monthNumber,
-        principal: principalPerMonth,
-        interest: interestPerMonth,
-        total: totalPerMonth,
-        remaining: Math.max(0, remainingPrincipal)
-      }
-    })
-    
-    return {
-      monthly: totalPerMonth,
-      totalInterest: interestPerMonth * t,
-      totalPayment: totalPerMonth * t,
-      schedule
-    }
-  }, [amount, tenor, interestRate])
+    return calculateLoanSchedule(p, i, t, interestType)
+  }, [amount, tenor, interestRate, interestType])
 
 
 
@@ -100,8 +81,7 @@ export default function LoanSimulatorPage() {
               <Label>Nominal Pinjaman</Label>
               <CurrencyInput value={amount} onValueChange={setAmount} />
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                <div className="space-y-2">
                  <Label>Tenor (Bulan)</Label>
                  <Select value={tenor} onValueChange={(v) => setTenor(v as string)}>
@@ -130,6 +110,19 @@ export default function LoanSimulatorPage() {
                </div>
             </div>
 
+            <div className="space-y-2">
+              <Label>Skema Bunga</Label>
+              <Select value={interestType} onValueChange={(v) => setInterestType(v as InterestType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat (Bunga Tetap)</SelectItem>
+                  <SelectItem value="effective">Effective (Bunga Menurun)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <Separator />
 
             <div className="pt-2">
@@ -148,8 +141,14 @@ export default function LoanSimulatorPage() {
         <div className="lg:col-span-2 space-y-6 min-w-0 w-full">
           <div className="grid gap-4 sm:grid-cols-3">
              <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                <p className="text-xs text-muted-foreground font-bold uppercase">Angsuran / Bulan</p>
-                <p className="text-xl font-black text-primary">{mounted && results ? formatIDR(results.monthly) : "Rp 0"}</p>
+                <p className="text-xs text-muted-foreground font-bold uppercase">
+                  {interestType === 'flat' ? 'Angsuran / Bulan' : 'Angsuran Pertama'}
+                </p>
+                <p className="text-xl font-black text-primary">
+                  {mounted && results 
+                    ? formatIDR(interestType === 'flat' ? results.monthlyInstallment! : results.installments[0].total) 
+                    : "Rp 0"}
+                </p>
              </div>
              <div className="p-4 rounded-xl bg-muted/50 border">
                 <p className="text-xs text-muted-foreground font-bold uppercase">Total Bunga</p>
@@ -164,7 +163,9 @@ export default function LoanSimulatorPage() {
           <Card className="shadow-md overflow-x-hidden w-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-base font-bold">Jadwal Angsuran (Estimasi)</CardTitle>
-              <Badge variant="outline" className="font-mono">Flat Interest</Badge>
+              <Badge variant="outline" className="font-mono">
+                {interestType === 'flat' ? 'Flat Interest' : 'Effective (Sliding)'}
+              </Badge>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
@@ -179,7 +180,7 @@ export default function LoanSimulatorPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {results?.schedule.map((item) => (
+                    {results?.installments.map((item) => (
                       <TableRow key={item.month}>
                         <TableCell className="font-medium">#{item.month}</TableCell>
                         <TableCell>{mounted ? formatIDR(item.principal) : "Rp 0"}</TableCell>

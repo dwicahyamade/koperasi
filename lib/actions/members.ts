@@ -88,7 +88,7 @@ export async function getMemberDetail(id: string) {
 
   const { data: loans } = await supabase
     .from('loans')
-    .select('*, loan_products(name)')
+    .select('*')
     .eq('member_id', id)
 
   return {

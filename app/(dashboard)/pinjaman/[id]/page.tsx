@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation"
 import { 
   ChevronLeft, 
   Download, 
-  Calendar, 
-  CreditCard, 
   TrendingDown,
   Clock,
   CheckCircle2,
-  Printer
+  Printer,
+  Plus,
+  Trash2,
+  Calendar as CalendarIcon
 } from "lucide-react"
+import { format } from "date-fns"
+import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { formatIDR } from "@/lib/utils"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { formatIDR, cn } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -35,7 +38,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
-import { PaymentDialog } from "@/components/loan/payment-dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { CurrencyInput } from "@/components/currency-input"
+import { addManualPayment, deleteInstallment as deleteInstallmentAction } from "@/lib/actions/loans"
+import { calculateLoanSchedule } from "@/lib/loan-utils"
 
 export default function LoanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params)
@@ -43,37 +50,40 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
   const [loan, setLoan] = React.useState<any>(null)
   const [installments, setInstallments] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = React.useState(false)
-  const [selectedInstallment, setSelectedInstallment] = React.useState<any>(null)
+  const [manualDate, setManualDate] = React.useState<Date | undefined>(new Date())
+  const [manualPrincipal, setManualPrincipal] = React.useState<string>("")
+  const [manualInterest, setManualInterest] = React.useState<string>("")
+  const [isAdding, setIsAdding] = React.useState(false)
+
+  const loadData = React.useCallback(async () => {
+    const supabase = createClient()
+    try {
+      const { data: loanData, error: loanError } = await supabase
+        .from('loans')
+        .select('*, members(full_name, kta_number)')
+        .eq('id', id)
+        .single()
+
+      if (loanError) throw loanError
+      setLoan(loanData)
+
+      const { data: instData } = await supabase
+        .from('loan_installments')
+        .select('*')
+        .eq('loan_id', id)
+        .order('installment_number', { ascending: true })
+
+      setInstallments(instData || [])
+    } catch (err) {
+      console.error("Failed to load data:", err)
+    } finally {
+      setLoading(false)
+    }
+  }, [id])
 
   React.useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      try {
-        const { data: loanData, error: loanError } = await supabase
-          .from('loans')
-          .select('*, members(full_name, kta_number), loan_products(name)')
-          .eq('id', id)
-          .single()
-
-        if (loanError) throw loanError
-        setLoan(loanData)
-
-        const { data: instData } = await supabase
-          .from('loan_installments')
-          .select('*')
-          .eq('loan_id', id)
-          .order('installment_number', { ascending: true })
-
-        setInstallments(instData || [])
-      } catch (err) {
-        console.error("Failed to load loan:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [id])
+    loadData()
+  }, [loadData])
 
 
 
@@ -95,21 +105,57 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const paidCount = installments.filter(i => i.paid_at !== null).length
-  const totalPaid = installments.filter(i => i.paid_at !== null).reduce((acc, i) => acc + Number(i.paid_amount), 0)
-  const remainingBalance = Number(loan.principal) - installments.filter(i => i.paid_at !== null).reduce((acc, i) => acc + Number(i.principal_amount), 0)
+  const totalPrincipalPaid = installments.filter(i => i.paid_at !== null).reduce((acc, i) => acc + Number(i.principal_amount), 0)
+  const totalInterestPaid = installments.filter(i => i.paid_at !== null).reduce((acc, i) => acc + Number(i.interest_amount), 0)
+  const totalPaid = totalPrincipalPaid + totalInterestPaid
+  const remainingBalance = Number(loan.principal) - totalPrincipalPaid
+  
+  // Accurate estimation using utility
+  const schedule = calculateLoanSchedule(
+    Number(loan.principal),
+    Number(loan.interest_rate),
+    loan.tenor_months,
+    loan.interest_type as any
+  )
+  const totalLoanLiability = schedule.totalPayment
+  const remainingTotal = Math.max(0, totalLoanLiability - totalPaid)
+  
   const monthlyPayment = installments.length > 0 ? Number(installments[0].principal_amount) + Number(installments[0].interest_amount) : 0
 
-  const handlePayNext = () => {
-    const nextUnpaid = installments.find(i => i.paid_at === null)
-    if (nextUnpaid) {
-      setSelectedInstallment(nextUnpaid)
-      setIsPaymentDialogOpen(true)
+  const handleAddManual = async () => {
+    if (!manualDate || (!manualPrincipal && !manualInterest)) return
+    setIsAdding(true)
+    try {
+      const result = await addManualPayment(
+        id, 
+        manualDate.toISOString().split('T')[0], 
+        Number(manualPrincipal) || 0,
+        Number(manualInterest) || 0
+      )
+      if (result.success) {
+        toast.success("Catatan piutang berhasil ditambahkan")
+        setManualPrincipal("")
+        setManualInterest("")
+        loadData()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menambahkan catatan")
+    } finally {
+      setIsAdding(false)
     }
   }
 
-  const handlePaySpecific = (inst: any) => {
-    setSelectedInstallment(inst)
-    setIsPaymentDialogOpen(true)
+  const handleDelete = async (instId: string) => {
+    if (!confirm("Hapus catatan ini?")) return
+    try {
+      const result = await deleteInstallmentAction(instId)
+      if (result.success) {
+        toast.success("Catatan piutang berhasil dihapus")
+        loadData()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menghapus catatan")
+    }
   }
 
   return (
@@ -121,7 +167,9 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Detail Pinjaman</h1>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-muted-foreground font-mono">{loan.members?.full_name || '-'}</span>
+            <span className="text-muted-foreground font-medium">{loan.borrower_name || '-'}</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span className="text-[10px] text-muted-foreground">Anggota: {loan.members?.full_name || '-'}</span>
             <StatusBadge status={loan.status} />
           </div>
         </div>
@@ -130,32 +178,35 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
               <Printer className="mr-2 h-4 w-4" />
               Cetak Transaksi
            </Button>
-           <Button onClick={handlePayNext} disabled={!installments.some(i => i.paid_at === null)}>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Bayar Angsuran
-           </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
+         <StatCard
+           title="Sisa Total"
+           value={formatIDR(remainingTotal)}
+           description="Estimasi Pokok + Bunga"
+           icon={TrendingDown}
+           className="bg-primary/5 border-primary/20 shadow-none text-primary"
+         />
         <StatCard
           title="Sisa Pokok"
           value={formatIDR(Math.max(0, remainingBalance))}
-          description="Total kewajiban tersisa"
+          description="Kewajiban pokok saja"
           icon={TrendingDown}
-          className="bg-primary/5 border-primary/20 shadow-none text-primary"
-        />
-        <StatCard
-          title="Angsuran / Bln"
-          value={formatIDR(monthlyPayment)}
-          description={`Pokok + Bunga (${loan.interest_rate}%)`}
-          icon={Calendar}
           className="shadow-none"
         />
         <StatCard
-          title="Progress Bayar"
-          value={`${paidCount}/${loan.tenor_months}`}
-          description="Jumlah bulan terbayar"
+          title="Total Masuk"
+          value={formatIDR(totalPaid)}
+          description={`P: ${formatIDR(totalPrincipalPaid)} | B: ${formatIDR(totalInterestPaid)}`}
+          icon={CheckCircle2}
+          className="shadow-none"
+        />
+        <StatCard
+          title="Progress"
+          value={`${paidCount}/${loan.tenor_months} Bln`}
+          description={`${loan.interest_type === 'effective' ? 'Bunga Menurun' : 'Bunga Tetap'}`}
           icon={Clock}
           className="shadow-none"
         />
@@ -169,11 +220,17 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
             <CardContent className="space-y-4">
                <div className="flex justify-between text-sm py-2 border-b">
                   <span className="text-muted-foreground">Peminjam</span>
-                  <span className="font-bold">{loan.members?.full_name || '-'}</span>
+                  <span className="font-bold">{loan.borrower_name || '-'}</span>
                </div>
                <div className="flex justify-between text-sm py-2 border-b">
-                  <span className="text-muted-foreground">Produk</span>
-                  <span className="font-medium">{loan.loan_products?.name || '-'}</span>
+                  <span className="text-muted-foreground">Anggota</span>
+                  <span className="font-medium">{loan.members?.full_name || '-'}</span>
+               </div>
+               <div className="flex justify-between text-sm py-2 border-b">
+                  <span className="text-muted-foreground">Skema Bunga</span>
+                  <Badge variant="outline" className="capitalize">
+                    {loan.interest_type === 'effective' ? 'Efektif' : 'Flat'}
+                  </Badge>
                </div>
                <div className="flex justify-between text-sm py-2 border-b">
                   <span className="text-muted-foreground">Tanggal Cair</span>
@@ -189,7 +246,7 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
                </div>
                <div className="flex justify-between text-sm py-2">
                   <span className="text-muted-foreground">Suku Bunga</span>
-                  <span className="font-medium">{loan.interest_rate}% Flat / bln</span>
+                  <span className="font-medium">{loan.interest_rate}% / bln</span>
                </div>
                
                <div className="pt-4">
@@ -207,54 +264,95 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
 
          <Card className="lg:col-span-2 shadow-md">
             <CardHeader>
-               <CardTitle>Kartu Piutang (Jadwal Angsuran)</CardTitle>
-               <CardDescription>Daftar riwayat dan rencana pembayaran angsuran.</CardDescription>
+               <CardTitle>Kartu Piutang</CardTitle>
+               <CardDescription>Catatan riwayat pembayaran dan tagihan secara manual.</CardDescription>
             </CardHeader>
             <CardContent>
+               <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Input Manual</p>
+                   <div className="flex flex-wrap items-end gap-3">
+                      <div className="space-y-1.5 flex-1">
+                         <label className="text-[10px] font-bold uppercase text-muted-foreground">Tanggal</label>
+                         <Popover>
+                            <PopoverTrigger 
+                               className={cn(
+                                  buttonVariants({ variant: "outline" }), 
+                                  "w-[180px] justify-start text-left font-normal h-10"
+                               )}
+                            >
+                               <CalendarIcon className="mr-2 h-4 w-4" />
+                               {manualDate ? format(manualDate, "dd MMM yyyy") : <span>Pilih Tgl</span>}
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                               <Calendar mode="single" selected={manualDate} onSelect={setManualDate} initialFocus />
+                            </PopoverContent>
+                         </Popover>
+                      </div>
+                      <div className="space-y-1.5 flex-1 min-w-[100px]">
+                         <label className="text-[10px] font-bold uppercase text-muted-foreground">Bayar Pokok</label>
+                         <CurrencyInput 
+                            value={manualPrincipal} 
+                            onValueChange={setManualPrincipal} 
+                            placeholder="Rp 0"
+                            className="h-10"
+                         />
+                      </div>
+                      <div className="space-y-1.5 flex-1 min-w-[100px]">
+                         <label className="text-[10px] font-bold uppercase text-muted-foreground">Bayar Bunga</label>
+                         <CurrencyInput 
+                            value={manualInterest} 
+                            onValueChange={setManualInterest} 
+                            placeholder="Rp 0"
+                            className="h-10"
+                         />
+                      </div>
+                      <Button 
+                         onClick={handleAddManual} 
+                         disabled={!manualDate || (!manualPrincipal && !manualInterest) || isAdding}
+                         className="h-10 px-6"
+                      >
+                         {isAdding ? "Menyimpan..." : (
+                            <>
+                               <Plus className="h-4 w-4 mr-2" />
+                               Tambah Catatan
+                            </>
+                         )}
+                      </Button>
+                   </div>
+               </div>
+
                <div className="rounded-md border overflow-hidden">
                   <Table>
                      <TableHeader className="bg-muted/50">
-                        <TableRow>
-                           <TableHead className="w-16">Ke-</TableHead>
-                           <TableHead>Tgl Tagihan</TableHead>
-                           <TableHead>Pokok</TableHead>
-                           <TableHead>Bunga</TableHead>
-                           <TableHead>Total</TableHead>
-                           <TableHead>Status</TableHead>
-                           <TableHead>Tgl Bayar</TableHead>
-                           <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
+                         <TableRow>
+                            <TableHead className="w-16">Ke-</TableHead>
+                            <TableHead>Tanggal</TableHead>
+                            <TableHead className="text-right">Pokok</TableHead>
+                            <TableHead className="text-right">Bunga</TableHead>
+                            <TableHead className="text-right">Total Bayar</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                         </TableRow>
                      </TableHeader>
                      <TableBody>
                         {installments.length > 0 ? installments.map((inst) => (
                            <TableRow key={inst.id}>
                               <TableCell className="font-bold">#{inst.installment_number}</TableCell>
-                              <TableCell className="font-mono text-xs">{new Date(inst.due_date).toLocaleDateString('id-ID')}</TableCell>
-                              <TableCell>{formatIDR(Number(inst.principal_amount))}</TableCell>
-                              <TableCell>{formatIDR(Number(inst.interest_amount))}</TableCell>
-                              <TableCell className="font-bold">{formatIDR(Number(inst.principal_amount) + Number(inst.interest_amount))}</TableCell>
-                              <TableCell>
-                                 {inst.paid_at ? (
-                                    <Badge className="bg-emerald-500 hover:bg-emerald-600">Lunas</Badge>
-                                 ) : (
-                                    <Badge variant="outline" className="text-amber-600 border-amber-300">Belum Bayar</Badge>
-                                 )}
+                              <TableCell className="font-mono text-xs">
+                                 {format(new Date(inst.due_date), 'dd/MM/yyyy')}
                               </TableCell>
-                              <TableCell className="text-xs text-muted-foreground font-mono">
-                                 {inst.paid_at ? new Date(inst.paid_at).toLocaleDateString('id-ID') : "-"}
-                              </TableCell>
+                               <TableCell className="text-right font-mono text-xs">{formatIDR(inst.principal_amount)}</TableCell>
+                               <TableCell className="text-right font-mono text-xs">{formatIDR(inst.interest_amount)}</TableCell>
+                               <TableCell className="text-right font-bold text-emerald-600">{formatIDR(inst.paid_amount)}</TableCell>
                               <TableCell className="text-right">
-                                 {!inst.paid_at && (
-                                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handlePaySpecific(inst)}>
-                                       Bayar
-                                    </Button>
-                                 )}
+                                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(inst.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                 </Button>
                               </TableCell>
                            </TableRow>
                         )) : (
                            <TableRow>
-                              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                 Belum ada jadwal angsuran. Pinjaman perlu dicairkan terlebih dahulu.
+                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                 Belum ada catatan piutang. Silakan tambah secara manual atau cairkan pinjaman.
                               </TableCell>
                            </TableRow>
                         )}
@@ -265,19 +363,6 @@ export default function LoanDetailPage({ params }: { params: Promise<{ id: strin
          </Card>
       </div>
 
-      <PaymentDialog 
-        isOpen={isPaymentDialogOpen}
-        onClose={() => {
-          setIsPaymentDialogOpen(false)
-          setSelectedInstallment(null)
-          // Refresh data (useEffect will trigger if we refresh the page or use router.refresh but for client side state we might need more)
-          // However, the recordInstallmentPayment action calls revalidatePath, 
-          // but we are using client-side fetching here. Let's add a manual reload or update state.
-          window.location.reload()
-        }}
-        installment={selectedInstallment}
-        memberName={loan.members?.full_name || '-'}
-      />
     </div>
   )
 }

@@ -18,3 +18,15 @@ export function formatIDR(val: number): string {
     maximumFractionDigits: 2,
   }).format(val)
 }
+/**
+ * Format a number as Indonesian Rupiah currency without decimal places.
+ * Output format: Rp10.000.000
+ */
+export function formatIDRCompact(val: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(val)
+}
