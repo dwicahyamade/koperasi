@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { getSavingsProducts } from "@/lib/actions/savings"
-import { SavingsProductDialog } from "@/components/savings/savings-product-dialog"
+import { SavingsProductDialog } from "@/components/settings/savings-product-dialog"
 import { DeleteProductDialog } from "@/components/settings/delete-product-dialog"
 
 export default function ProductSettingsPage() {
