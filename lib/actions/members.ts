@@ -70,26 +70,29 @@ export async function getMembers() {
 export async function getMemberDetail(id: string) {
   const supabase = await createClient()
 
-  const { data: member, error: memberError } = await supabase
-    .from('members')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const [
+    { data: member, error: memberError },
+    { data: savings },
+    { data: loans }
+  ] = await Promise.all([
+    supabase
+      .from('members')
+      .select('*')
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('savings_transactions')
+      .select('*, savings_products(name)')
+      .eq('member_id', id),
+    supabase
+      .from('loans')
+      .select('*')
+      .eq('member_id', id)
+  ])
 
   if (memberError) {
     throw new Error(memberError.message)
   }
-
-  // Also fetch related savings and loans
-  const { data: savings } = await supabase
-    .from('savings_transactions')
-    .select('*, savings_products(name)')
-    .eq('member_id', id)
-
-  const { data: loans } = await supabase
-    .from('loans')
-    .select('*')
-    .eq('member_id', id)
 
   return {
     ...member,

@@ -1,4 +1,8 @@
+"use client"
+
 import { AppSidebar } from "@/components/app-sidebar"
+import { usePathname } from "next/navigation"
+import React from "react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,6 +24,16 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+  
+  // Clean up path segments and format them
+  const segments = pathname
+    .split('/')
+    .filter(segment => segment !== '')
+    .map(segment => {
+      return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ')
+    })
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -35,10 +49,32 @@ export default function DashboardLayout({
                     Dashboard
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Overview</BreadcrumbPage>
-                </BreadcrumbItem>
+                
+                {segments.length === 0 ? (
+                  <>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>Overview</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                ) : (
+                  segments.map((segment, index) => {
+                    const isLast = index === segments.length - 1
+                    
+                    return (
+                      <React.Fragment key={segment}>
+                        <BreadcrumbSeparator className="hidden md:block" />
+                        <BreadcrumbItem>
+                          {isLast ? (
+                            <BreadcrumbPage>{segment}</BreadcrumbPage>
+                          ) : (
+                            <BreadcrumbPage className="text-muted-foreground">{segment}</BreadcrumbPage>
+                          )}
+                        </BreadcrumbItem>
+                      </React.Fragment>
+                    )
+                  })
+                )}
               </BreadcrumbList>
             </Breadcrumb>
           </div>

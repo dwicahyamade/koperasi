@@ -2,7 +2,17 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { calculateLoanSchedule } from '@/lib/loan-utils'
+
+export async function getLoans() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('loans')
+    .select('*, members(full_name)')
+    .order('created_at', { ascending: false })
+    
+  if (error) throw new Error(error.message)
+  return data
+}
 
 export async function requestLoan(formData: any) {
   const supabase = await createClient()

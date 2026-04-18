@@ -38,8 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { createClient } from "@/lib/supabase/client"
-import { approveLoan, disburseLoan } from "@/lib/actions/loans"
+import { getLoans, approveLoan, disburseLoan } from "@/lib/actions/loans"
 import { toast } from "sonner"
 
 export default function LoansPage() {
@@ -47,14 +46,8 @@ export default function LoansPage() {
   const [loading, setLoading] = React.useState(true)
 
   async function loadLoans() {
-    const supabase = createClient()
     try {
-      const { data, error } = await supabase
-        .from('loans')
-        .select('*, members(full_name)')
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
+      const data = await getLoans()
       setLoans(data || [])
     } catch (err) {
       console.error("Failed to load loans:", err)
@@ -234,19 +227,19 @@ export default function LoansPage() {
             ) : (
               <>
                 <TabsContent value="all" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans} searchKey="borrower_name" />
+                  <DataTable columns={columns} data={loans} searchKey="borrower_name" searchPlaceholder="Cari Peminjam..." />
                 </TabsContent>
                 <TabsContent value="pending" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans.filter(l => l.status === "pending")} searchKey="borrower_name" />
+                  <DataTable columns={columns} data={loans.filter(l => l.status === "pending")} searchKey="borrower_name" searchPlaceholder="Cari Peminjam..." />
                 </TabsContent>
                 <TabsContent value="approved" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans.filter(l => l.status === "approved")} searchKey="borrower_name" />
+                  <DataTable columns={columns} data={loans.filter(l => l.status === "approved")} searchKey="borrower_name" searchPlaceholder="Cari Peminjam..." />
                 </TabsContent>
                 <TabsContent value="disbursed" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans.filter(l => l.status === "disbursed")} searchKey="borrower_name" />
+                  <DataTable columns={columns} data={loans.filter(l => l.status === "disbursed")} searchKey="borrower_name" searchPlaceholder="Cari Peminjam..." />
                 </TabsContent>
                 <TabsContent value="closed" className="m-0 border-0 p-0">
-                  <DataTable columns={columns} data={loans.filter(l => l.status === "closed")} searchKey="borrower_name" />
+                  <DataTable columns={columns} data={loans.filter(l => l.status === "closed")} searchKey="borrower_name" searchPlaceholder="Cari Peminjam..." />
                 </TabsContent>
               </>
             )}

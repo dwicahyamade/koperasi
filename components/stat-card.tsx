@@ -23,7 +23,7 @@ export function StatCard({
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-xl md:text-2xl font-bold truncate" title={String(value)}>{value}</div>
         {description && (
           <p className="text-xs text-muted-foreground">{description}</p>
         )}

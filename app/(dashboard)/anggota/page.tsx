@@ -161,7 +161,7 @@ export default function MembersPage() {
             <p className="text-muted-foreground animate-pulse">Memuat data anggota...</p>
           </div>
         ) : (
-          <DataTable columns={columns} data={members} searchKey="full_name" />
+          <DataTable columns={columns} data={members} searchKey="full_name" searchPlaceholder="Cari Anggota..." />
         )}
       </div>
     </div>

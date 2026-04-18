@@ -1,16 +1,17 @@
 'use server'
 
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 
-export async function getDashboardStats(startDate?: string, endDate?: string) {
+export const getDashboardStats = cache(async (startDate?: string, endDate?: string) => {
   const supabase = await createClient()
 
-  // 1. Total Members
-  const { count: memberCount } = await supabase
+  // 1. Member Query
+  const memberQuery = supabase
     .from('members')
     .select('*', { count: 'exact', head: true })
 
-  // 2. Total Savings (Aggregate amount) with breakdown
+  // 2. Savings Query
   let savingsQuery = supabase
     .from('savings_transactions')
     .select('amount, type, savings_products(name)')
@@ -19,38 +20,13 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
     savingsQuery = savingsQuery.gte('created_at', startDate)
   }
   if (endDate) {
-    // Add one day to endDate to include transactions on that day
     const nextDay = new Date(endDate)
     nextDay.setDate(nextDay.getDate() + 1)
     const nextDayStr = nextDay.toISOString().split('T')[0]
     savingsQuery = savingsQuery.lt('created_at', nextDayStr)
   }
 
-  const { data: savings } = await savingsQuery
-
-  const savingsBreakdown = {
-    pokok: 0,
-    wajib: 0,
-    sukarela: 0
-  }
-
-  const totalSavings = savings?.reduce((acc, curr: any) => {
-    const amount = Number(curr.amount)
-    const isDeposit = curr.type === 'deposit'
-    const productName = curr.savings_products?.name?.toLowerCase()
-
-    if (productName === 'pokok') {
-      savingsBreakdown.pokok += isDeposit ? amount : -amount
-    } else if (productName === 'wajib') {
-      savingsBreakdown.wajib += isDeposit ? amount : -amount
-    } else if (productName === 'sukarela') {
-      savingsBreakdown.sukarela += isDeposit ? amount : -amount
-    }
-
-    return isDeposit ? acc + amount : acc - amount
-  }, 0) || 0
-
-  // 3. Total Loans (active/disbursed)
+  // 3. Loans Query
   let loansQuery = supabase
     .from('loans')
     .select('principal')
@@ -66,10 +42,7 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
     loansQuery = loansQuery.lt('created_at', nextDayStr)
   }
 
-  const { data: activeLoans } = await loansQuery
-  const totalActiveLoans = activeLoans?.reduce((acc, curr) => acc + Number(curr.principal), 0) || 0
-
-  // 4. Current Cash Balance (from cash_book)
+  // 4. Cash Query
   let cashQuery = supabase
     .from('cash_book')
     .select('amount, type')
@@ -84,9 +57,44 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
     cashQuery = cashQuery.lt('created_at', nextDayStr)
   }
 
-  const { data: cashEntries } = await cashQuery
+  // Execute all queries in parallel
+  const [
+    { count: memberCount },
+    { data: savings },
+    { data: activeLoans },
+    { data: cashEntries }
+  ] = await Promise.all([
+    memberQuery,
+    savingsQuery,
+    loansQuery,
+    cashQuery
+  ])
 
-  const currentCash = cashEntries?.reduce((acc, curr) => {
+  const savingsBreakdown = {
+    pokok: 0,
+    wajib: 0,
+    sukarela: 0
+  }
+
+  const totalSavings = savings?.reduce((acc: number, curr: any) => {
+    const amount = Number(curr.amount)
+    const isDeposit = curr.type === 'deposit'
+    const productName = curr.savings_products?.name?.toLowerCase()
+
+    if (productName === 'pokok') {
+      savingsBreakdown.pokok += isDeposit ? amount : -amount
+    } else if (productName === 'wajib') {
+      savingsBreakdown.wajib += isDeposit ? amount : -amount
+    } else if (productName === 'sukarela') {
+      savingsBreakdown.sukarela += isDeposit ? amount : -amount
+    }
+
+    return isDeposit ? acc + amount : acc - amount
+  }, 0) || 0
+
+  const totalActiveLoans = activeLoans?.reduce((acc: number, curr: any) => acc + Number(curr.principal), 0) || 0
+
+  const currentCash = cashEntries?.reduce((acc: number, curr: any) => {
     return curr.type === 'in' ? acc + Number(curr.amount) : acc - Number(curr.amount)
   }, 0) || 0
 
@@ -97,7 +105,7 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
     totalActiveLoans,
     currentCash,
   }
-}
+})
 
 export async function getCashBookEntries() {
   const supabase = await createClient()

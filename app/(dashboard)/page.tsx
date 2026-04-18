@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 
 import { StatCard } from "@/components/stat-card"
-import { formatIDR } from "@/lib/utils"
+import { formatIDR, formatIDRCompact } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -72,19 +72,19 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Total Simpanan"
-          value={loading ? "..." : formatIDR(stats.totalSavings)}
+          value={loading ? "..." : formatIDRCompact(stats.totalSavings)}
           description="Seluruh dana tabungan"
           icon={Wallet}
         />
         <StatCard
           title="Pinjaman Berjalan"
-          value={loading ? "..." : formatIDR(stats.totalActiveLoans)}
+          value={loading ? "..." : formatIDRCompact(stats.totalActiveLoans)}
           description="Total pinjaman aktif"
           icon={Landmark}
         />
         <StatCard
           title="Saldo Kas"
-          value={loading ? "..." : formatIDR(stats.currentCash)}
+          value={loading ? "..." : formatIDRCompact(stats.currentCash)}
           description="Dana tersedia di kas"
           icon={ArrowLeftRight}
         />
@@ -104,8 +104,8 @@ export default function DashboardPage() {
                   {loading ? "..." : formatIDR(stats.savingsBreakdown.pokok)}
                 </p>
               </div>
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-blue-600" />
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
             
@@ -116,8 +116,8 @@ export default function DashboardPage() {
                   {loading ? "..." : formatIDR(stats.savingsBreakdown.wajib)}
                 </p>
               </div>
-              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-green-600" />
+              <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
             </div>
 
@@ -128,8 +128,8 @@ export default function DashboardPage() {
                   {loading ? "..." : formatIDR(stats.savingsBreakdown.sukarela)}
                 </p>
               </div>
-              <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-purple-600" />
+              <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>

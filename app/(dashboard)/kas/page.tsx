@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { formatIDR } from "@/lib/utils"
+import { formatIDR, formatIDRCompact } from "@/lib/utils"
 import { StatCard } from "@/components/stat-card"
 import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
@@ -134,21 +134,21 @@ export default function CashBookPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           title="Saldo Kas Saat Ini"
-          value={formatIDR(balance)}
+          value={formatIDRCompact(balance)}
           description="Total dana tersedia"
           icon={ArrowLeftRight}
           className="bg-indigo-500/5 border-indigo-500/20 shadow-none text-indigo-700"
         />
         <StatCard
           title="Total Pemasukan"
-          value={formatIDR(totalIn)}
+          value={formatIDRCompact(totalIn)}
           description="Total inflow dari segala sumber"
           icon={ArrowUpRight}
           className="bg-emerald-500/5 border-emerald-500/20 shadow-none text-emerald-700"
         />
         <StatCard
           title="Total Pengeluaran"
-          value={formatIDR(totalOut)}
+          value={formatIDRCompact(totalOut)}
           description="Total outflow operasional/pinjaman"
           icon={ArrowDownRight}
           className="bg-red-500/5 border-red-500/20 shadow-none text-red-700"
@@ -163,7 +163,7 @@ export default function CashBookPage() {
           </div>
           <div className="flex items-center gap-2">
             <Select defaultValue="all">
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger>
                 <SelectValue placeholder="Semua Aliran" />
               </SelectTrigger>
               <SelectContent>
@@ -180,7 +180,7 @@ export default function CashBookPage() {
               <p className="text-muted-foreground animate-pulse">Memuat data kas...</p>
             </div>
           ) : (
-            <DataTable columns={columns} data={entries} searchKey="description" />
+            <DataTable columns={columns} data={entries} searchKey="description" searchPlaceholder="Cari Keterangan Kas..." />
           )}
         </CardContent>
       </Card>
