@@ -193,7 +193,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           <Tabs defaultValue="simpanan" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1">
+            <TabsList className="grid w-full gap-2 grid-cols-2 md:grid-cols-3 bg-muted/50 p-1">
               <TabsTrigger value="simpanan">Simpanan</TabsTrigger>
               <TabsTrigger value="pinjaman">Pinjaman</TabsTrigger>
               <TabsTrigger value="riwayat">Riwayat Transaksi</TabsTrigger>

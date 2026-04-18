@@ -14,7 +14,7 @@ import {
   FilterX
 } from "lucide-react"
 
-import { format } from "date-fns"
+import { format, startOfMonth, endOfMonth } from "date-fns"
 import { DateRange } from "react-day-picker"
 import { DatePickerWithRange } from "@/components/date-range-picker"
 
@@ -35,7 +35,10 @@ import { getSavingsReport } from "@/lib/actions/savings"
 export default function SavingsPage() {
   const [transactions, setTransactions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [date, setDate] = React.useState<DateRange | undefined>()
+  const [date, setDate] = React.useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date())
+  })
 
   const load = React.useCallback(async () => {
     setLoading(true)
@@ -133,7 +136,7 @@ export default function SavingsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Manajemen Simpanan</h1>
           <p className="text-muted-foreground">Monitoring total tabungan anggota dan riwayat transaksi.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center flex-wrap gap-2">
           <DatePickerWithRange 
             date={date} 
             onDateChange={setDate} 
