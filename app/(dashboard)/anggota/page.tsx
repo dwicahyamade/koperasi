@@ -19,123 +19,144 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Member } from "@/lib/types/database"
 import { getMembers } from "@/lib/actions/members"
+import { DeleteMemberDialog } from "@/components/delete-member-dialog"
 
-const columns: ColumnDef<any>[] = [
-  {
-    accessorKey: "kta_number",
-    header: "KTA",
-  },
-  {
-    accessorKey: "full_name",
-    header: "Nama Lengkap",
-    cell: ({ row }) => <div className="font-medium">{row.getValue("full_name")}</div>,
-  },
-  {
-    accessorKey: "nik",
-    header: "NIK",
-  },
-  {
-    accessorKey: "phone",
-    header: "Telepon",
-  },
-  {
-    id: "simpanan_pokok",
-    header: "Simp. Pokok",
-    cell: ({ row }) => {
-      const txs = row.original.savings_transactions;
-      if (!txs) return "-";
-      const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("pokok")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
-      return total ? formatIDR(total) : "-";
-    }
-  },
-  {
-    id: "simpanan_wajib",
-    header: "Simp. Wajib",
-    cell: ({ row }) => {
-      const txs = row.original.savings_transactions;
-      if (!txs) return "-";
-      const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("wajib")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
-      return total ? formatIDR(total) : "-";
-    }
-  },
-  {
-    id: "simpanan_sukarela",
-    header: "Simp. Sukarela",
-    cell: ({ row }) => {
-      const txs = row.original.savings_transactions;
-      if (!txs) return "-";
-      const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("sukarela")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
-      return total ? formatIDR(total) : "-";
-    }
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />,
-  },
-  {
-    accessorKey: "registered_at",
-    header: "Tgl Daftar",
-    cell: ({ row }) => {
-      const date = row.getValue("registered_at") as string
-      return date ? new Date(date).toLocaleDateString('id-ID') : '-'
+function getColumns(onDeleteClick: (member: any) => void): ColumnDef<any>[] {
+  return [
+    {
+      accessorKey: "kta_number",
+      header: "KTA",
     },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const member = row.original
+    {
+      accessorKey: "full_name",
+      header: "Nama Lengkap",
+      cell: ({ row }) => <div className="font-medium">{row.getValue("full_name")}</div>,
+    },
+    {
+      accessorKey: "nik",
+      header: "NIK",
+    },
+    {
+      accessorKey: "phone",
+      header: "Telepon",
+    },
+    {
+      id: "simpanan_pokok",
+      header: "Simp. Pokok",
+      cell: ({ row }) => {
+        const txs = row.original.savings_transactions;
+        if (!txs) return "-";
+        const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("pokok")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
+        return total ? formatIDR(total) : "-";
+      }
+    },
+    {
+      id: "simpanan_wajib",
+      header: "Simp. Wajib",
+      cell: ({ row }) => {
+        const txs = row.original.savings_transactions;
+        if (!txs) return "-";
+        const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("wajib")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
+        return total ? formatIDR(total) : "-";
+      }
+    },
+    {
+      id: "simpanan_sukarela",
+      header: "Simp. Sukarela",
+      cell: ({ row }) => {
+        const txs = row.original.savings_transactions;
+        if (!txs) return "-";
+        const total = txs.filter((t: any) => t.savings_products?.name?.toLowerCase().includes("sukarela")).reduce((sum: number, tx: any) => sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
+        return total ? formatIDR(total) : "-";
+      }
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={row.getValue("status")} />,
+    },
+    {
+      accessorKey: "registered_at",
+      header: "Tgl Daftar",
+      cell: ({ row }) => {
+        const date = row.getValue("registered_at") as string
+        return date ? new Date(date).toLocaleDateString('id-ID') : '-'
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const member = row.original
 
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 p-0")}
-          >
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-            <DropdownMenuItem
-              nativeButton={false}
-              render={<Link href={`/anggota/${member.id}`} />}
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 p-0")}
             >
-                <Eye className="mr-2 h-4 w-4" />
-                Lihat Detail
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Data
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
-              <Trash className="mr-2 h-4 w-4" />
-              Hapus
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<Link href={`/anggota/${member.id}`} />}
+              >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Lihat Detail
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Data
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => onDeleteClick(member)}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Hapus
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
     },
-  },
-]
+  ]
+}
 
 export default function MembersPage() {
   const [members, setMembers] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [memberToDelete, setMemberToDelete] = React.useState<any>(null)
+
+  const loadMembers = React.useCallback(async () => {
+    try {
+      const data = await getMembers()
+      setMembers(data)
+    } catch (err) {
+      console.error("Failed to load members:", err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   React.useEffect(() => {
-    async function load() {
-      try {
-        const data = await getMembers()
-        setMembers(data)
-      } catch (err) {
-        console.error("Failed to load members:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
+    loadMembers()
+  }, [loadMembers])
+
+  function handleDeleteClick(member: any) {
+    setMemberToDelete(member)
+    setDeleteDialogOpen(true)
+  }
+
+  function handleDeleteSuccess() {
+    setLoading(true)
+    loadMembers()
+  }
+
+  const columns = React.useMemo(() => getColumns(handleDeleteClick), [])
 
   return (
     <div className="space-y-6">
@@ -164,6 +185,13 @@ export default function MembersPage() {
           <DataTable columns={columns} data={members} searchKey="full_name" searchPlaceholder="Cari Anggota..." />
         )}
       </div>
+
+      <DeleteMemberDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        member={memberToDelete}
+        onSuccess={handleDeleteSuccess}
+      />
     </div>
   )
 }

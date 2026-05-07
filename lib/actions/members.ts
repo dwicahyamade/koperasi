@@ -100,3 +100,51 @@ export async function getMemberDetail(id: string) {
     loans,
   }
 }
+
+export async function deleteMember(id: string) {
+  const supabase = await createClient()
+
+  // Check for active loans
+  const { data: activeLoans } = await supabase
+    .from('loans')
+    .select('id')
+    .eq('member_id', id)
+    .in('status', ['pending', 'approved', 'disbursed'])
+    .limit(1)
+
+  if (activeLoans && activeLoans.length > 0) {
+    throw new Error('Anggota masih memiliki pinjaman aktif. Selesaikan semua pinjaman terlebih dahulu.')
+  }
+
+  // Check for savings balance
+  const { data: savingsTxs } = await supabase
+    .from('savings_transactions')
+    .select('amount, type')
+    .eq('member_id', id)
+
+  if (savingsTxs && savingsTxs.length > 0) {
+    const balance = savingsTxs.reduce((sum, tx) => {
+      return sum + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount))
+    }, 0)
+
+    if (balance > 0) {
+      throw new Error('Anggota masih memiliki saldo simpanan. Tarik semua simpanan terlebih dahulu.')
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('members')
+    .delete()
+    .eq('id', id)
+    .select()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('Gagal menghapus anggota. Anda tidak memiliki izin atau anggota tidak ditemukan.')
+  }
+
+  revalidatePath('/(dashboard)/anggota')
+}
