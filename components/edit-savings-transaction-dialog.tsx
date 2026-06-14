@@ -61,7 +61,17 @@ const getTodayDateString = () => {
 interface EditSavingsTransactionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  transaction: any
+  transaction: {
+    id: string
+    type: "deposit" | "withdrawal"
+    amount: number
+    product_id: string
+    created_at?: string
+    notes?: string | null
+    savings_products?: {
+      name: string
+    }
+  } | null | undefined
   onSuccess: () => void
 }
 
@@ -72,7 +82,7 @@ export function EditSavingsTransactionDialog({
   onSuccess,
 }: EditSavingsTransactionDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false)
-  const [products, setProducts] = React.useState<any[]>([])
+  const [products, setProducts] = React.useState<{ id: string; name: string }[]>([])
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
 
   React.useEffect(() => {
@@ -133,9 +143,9 @@ export function EditSavingsTransactionDialog({
       
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Gagal Mengubah Transaksi", {
-        description: error.message || "Terjadi kesalahan saat menyimpan perubahan.",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan saat menyimpan perubahan.",
       })
     } finally {
       setIsLoading(false)
@@ -153,9 +163,9 @@ export function EditSavingsTransactionDialog({
       })
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Gagal Menghapus Transaksi", {
-        description: error.message || "Terjadi kesalahan saat menghapus transaksi.",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan saat menghapus transaksi.",
       })
     } finally {
       setIsLoading(false)

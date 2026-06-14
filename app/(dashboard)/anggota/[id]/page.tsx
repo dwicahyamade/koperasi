@@ -43,7 +43,17 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
   const router = useRouter()
   const [member, setMember] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
-  const [selectedTx, setSelectedTx] = React.useState<any>(null)
+  const [selectedTx, setSelectedTx] = React.useState<{
+    id: string
+    type: "deposit" | "withdrawal"
+    amount: number
+    product_id: string
+    created_at?: string
+    notes?: string | null
+    savings_products?: {
+      name: string
+    }
+  } | null>(null)
   const [isEditOpen, setIsEditOpen] = React.useState(false)
 
   const load = React.useCallback(async () => {

@@ -122,7 +122,16 @@ export async function deleteSavingsProduct(id: string) {
   return { success: true }
 }
 
-export async function updateSavingsTransaction(id: string, formData: any) {
+export async function updateSavingsTransaction(
+  id: string,
+  formData: {
+    product_id: string
+    type: 'deposit' | 'withdrawal'
+    amount: number
+    notes: string | null
+    date?: string
+  }
+) {
   const supabase = await createClient()
 
   // 1. Get current transaction to find out member_id (for revalidation)
