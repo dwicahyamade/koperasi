@@ -36,26 +36,33 @@ import { StatCard } from "@/components/stat-card"
 import { getMemberDetail } from "@/lib/actions/members"
 import { formatIDR } from "@/lib/utils"
 import { Member } from "@/lib/types/database"
+import { EditSavingsTransactionDialog } from "@/components/edit-savings-transaction-dialog"
 
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params)
   const router = useRouter()
   const [member, setMember] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
+  const [selectedTx, setSelectedTx] = React.useState<any>(null)
+  const [isEditOpen, setIsEditOpen] = React.useState(false)
+
+  const load = React.useCallback(async () => {
+    try {
+      const data = await getMemberDetail(id)
+      setMember(data)
+    } catch (err) {
+      console.error("Failed to load member:", err)
+    }
+  }, [id])
 
   React.useEffect(() => {
-    async function load() {
-      try {
-        const data = await getMemberDetail(id)
-        setMember(data)
-      } catch (err) {
-        console.error("Failed to load member:", err)
-      } finally {
-        setLoading(false)
-      }
+    async function init() {
+      setLoading(true)
+      await load()
+      setLoading(false)
     }
-    load()
-  }, [id])
+    init()
+  }, [load])
 
   if (loading) {
     return (
@@ -206,7 +213,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                     <div className="space-y-3">
                       <h4 className="font-semibold text-sm">Riwayat Simpanan</h4>
                       {member.savings.map((tx: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center text-sm p-3 bg-muted/20 rounded-lg">
+                        <div key={idx} className="flex justify-between items-center text-sm p-3 bg-muted/20 rounded-lg group">
                            <div className="flex flex-col">
                               <span className="font-medium">
                                 {tx.type === 'deposit' ? 'Setoran' : 'Penarikan'} {tx.savings_products?.name || ''}
@@ -215,9 +222,22 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                                 {new Date(tx.created_at).toLocaleDateString('id-ID')}
                               </span>
                            </div>
-                           <span className={tx.type === 'deposit' ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
-                             {tx.type === 'deposit' ? '+' : '-'}{formatIDR(Number(tx.amount))}
-                           </span>
+                           <div className="flex items-center gap-3">
+                              <span className={tx.type === 'deposit' ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
+                                {tx.type === 'deposit' ? '+' : '-'}{formatIDR(Number(tx.amount))}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => {
+                                  setSelectedTx(tx)
+                                  setIsEditOpen(true)
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                           </div>
                         </div>
                       ))}
                     </div>
@@ -269,6 +289,12 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           </Tabs>
         </div>
       </div>
+      <EditSavingsTransactionDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        transaction={selectedTx}
+        onSuccess={load}
+      />
     </div>
   )
 }

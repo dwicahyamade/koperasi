@@ -121,3 +121,93 @@ export async function deleteSavingsProduct(id: string) {
   revalidatePath('/(dashboard)/pengaturan/produk')
   return { success: true }
 }
+
+export async function updateSavingsTransaction(id: string, formData: any) {
+  const supabase = await createClient()
+
+  // 1. Get current transaction to find out member_id (for revalidation)
+  const { data: currentTx, error: fetchError } = await supabase
+    .from('savings_transactions')
+    .select('member_id, type, product_id')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) {
+    throw new Error(fetchError.message)
+  }
+
+  // 2. Validate Simpanan Pokok: Only 1x per member for deposit
+  if (formData.type === 'deposit') {
+    const { data: product } = await supabase
+      .from('savings_products')
+      .select('name')
+      .eq('id', formData.product_id)
+      .single()
+
+    if (product && product.name.toLowerCase().includes('pokok')) {
+      const { data: existingDeposits } = await supabase
+        .from('savings_transactions')
+        .select('id')
+        .eq('member_id', currentTx.member_id)
+        .eq('product_id', formData.product_id)
+        .eq('type', 'deposit')
+        .neq('id', id)
+
+      if (existingDeposits && existingDeposits.length > 0) {
+        throw new Error("Anggota ini sudah memiliki catatan setoran untuk Simpanan Pokok. Simpanan Pokok hanya dapat disetor 1x.")
+      }
+    }
+  }
+
+  // 3. Update savings_transactions
+  const { data: transaction, error: updateError } = await supabase
+    .from('savings_transactions')
+    .update({
+      product_id: formData.product_id,
+      type: formData.type, // 'deposit' or 'withdrawal'
+      amount: formData.amount,
+      notes: formData.notes,
+      ...(formData.date ? { created_at: new Date(`${formData.date}T12:00:00Z`).toISOString() } : {}),
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (updateError) {
+    throw new Error(updateError.message)
+  }
+
+  revalidatePath('/(dashboard)/simpanan')
+  revalidatePath(`/(dashboard)/anggota/${currentTx.member_id}`)
+  return transaction
+}
+
+export async function deleteSavingsTransaction(id: string) {
+  const supabase = await createClient()
+
+  // 1. Get current transaction to find out member_id (for revalidation)
+  const { data: currentTx, error: fetchError } = await supabase
+    .from('savings_transactions')
+    .select('member_id')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) {
+    throw new Error(fetchError.message)
+  }
+
+  // 2. Delete the transaction (trigger will handle cash_book automatically)
+  const { error: deleteError } = await supabase
+    .from('savings_transactions')
+    .delete()
+    .eq('id', id)
+
+  if (deleteError) {
+    throw new Error(deleteError.message)
+  }
+
+  revalidatePath('/(dashboard)/simpanan')
+  revalidatePath(`/(dashboard)/anggota/${currentTx.member_id}`)
+  return { success: true }
+}
+
