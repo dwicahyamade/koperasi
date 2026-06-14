@@ -37,20 +37,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { createMember } from "@/lib/actions/members"
 
 const formSchema = z.object({
+  kta_number: z.string().min(1, {
+    message: "Nomor KTA tidak boleh kosong.",
+  }),
   full_name: z.string().min(2, {
     message: "Nama lengkap minimal 2 karakter.",
   }),
-  nik: z.string().min(16, {
-    message: "NIK harus 16 digit.",
-  }).max(16, {
-    message: "NIK harus 16 digit.",
+  nik: z.string().min(1, {
+    message: "NIK tidak boleh kosong.",
   }),
-  phone: z.string().min(10, {
-    message: "Nomor telepon minimal 10 digit.",
-  }),
-  address: z.string().min(5, {
-    message: "Alamat minimal 5 karakter.",
-  }),
+  phone: z.string().optional(),
+  address: z.string().optional(),
   status: z.enum(["active", "inactive"]),
 })
 
@@ -61,6 +58,7 @@ export default function AddMemberPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      kta_number: "",
       full_name: "",
       nik: "",
       phone: "",
@@ -73,15 +71,12 @@ export default function AddMemberPage() {
     setIsLoading(true)
     
     try {
-      // Generate KTA number based on timestamp
-      const ktaNumber = `KTA-${String(Date.now()).slice(-6)}`
-      
       await createMember({
-        kta_number: ktaNumber,
+        kta_number: values.kta_number,
         full_name: values.full_name,
         nik: values.nik,
-        phone: values.phone,
-        address: values.address,
+        phone: values.phone || null,
+        address: values.address || null,
         status: values.status,
       })
       
@@ -122,9 +117,22 @@ export default function AddMemberPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
+                  name="kta_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nomor KTA</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Contoh: A.11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="full_name"
                   render={({ field }) => (
-                    <FormItem className="sm:col-span-2">
+                    <FormItem>
                       <FormLabel>Nama Lengkap</FormLabel>
                       <FormControl>
                         <Input placeholder="Contoh: Budi Santoso" {...field} />
@@ -140,7 +148,7 @@ export default function AddMemberPage() {
                     <FormItem>
                       <FormLabel>NIK (Nomor Induk Kependudukan)</FormLabel>
                       <FormControl>
-                        <Input placeholder="16 digit NIK" {...field} />
+                        <Input placeholder="NIK anggota" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -151,7 +159,7 @@ export default function AddMemberPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nomor Telepon</FormLabel>
+                      <FormLabel>Nomor Telepon (Opsional)</FormLabel>
                       <FormControl>
                         <Input placeholder="08xxxxxxxxxx" {...field} />
                       </FormControl>

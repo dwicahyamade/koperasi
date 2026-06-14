@@ -29,9 +29,10 @@ interface MemberComboboxProps {
   value?: string
   onValueChange: (value: string) => void
   disabled?: boolean
+  sortBy?: 'full_name' | 'kta_number'
 }
 
-export function MemberCombobox({ value, onValueChange, disabled }: MemberComboboxProps) {
+export function MemberCombobox({ value, onValueChange, disabled, sortBy = 'full_name' }: MemberComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [members, setMembers] = React.useState<MemberOption[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -43,12 +44,12 @@ export function MemberCombobox({ value, onValueChange, disabled }: MemberCombobo
         .from('members')
         .select('id, full_name, kta_number')
         .eq('status', 'active')
-        .order('full_name')
+        .order(sortBy)
 
       if (!error && data) {
         setMembers(data.map(m => ({
           id: m.id,
-          label: `${m.full_name} (${m.kta_number})`
+          label: `${m.kta_number} - ${m.full_name}`
         })))
       }
       setLoading(false)

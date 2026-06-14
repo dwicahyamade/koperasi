@@ -194,6 +194,7 @@ export default function SavingsTransactionPage() {
                         value={field.value} 
                         onValueChange={field.onChange} 
                         disabled={isLoading}
+                        sortBy="kta_number"
                       />
                       <FormMessage />
                     </FormItem>
