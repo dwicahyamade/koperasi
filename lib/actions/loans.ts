@@ -194,6 +194,46 @@ export async function addManualPayment(loanId: string, paidAt: string, principal
   return { success: true }
 }
 
+export async function getAllInstallments() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('loan_installments')
+    .select('*, loans(id, borrower_name, members(full_name))')
+    .order('due_date', { ascending: false })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function deleteLoan(loanId: string) {
+  const supabase = await createClient()
+
+  // 1. Get all installment ids for bulk cash_book cleanup
+  const { data: installments } = await supabase
+    .from('loan_installments')
+    .select('id')
+    .eq('loan_id', loanId)
+
+  const installmentIds = (installments || []).map(i => i.id)
+
+  // 2. Delete cash_book: disbursement entry (reference_id = loanId)
+  await supabase.from('cash_book').delete().eq('reference_id', loanId).eq('category', 'loan_disbursement')
+
+  // 3. Delete cash_book: installment entries (reference_id = installment ids)
+  if (installmentIds.length > 0) {
+    await supabase.from('cash_book').delete().in('reference_id', installmentIds).eq('category', 'loan_installment')
+  }
+
+  // 4. Delete installments
+  await supabase.from('loan_installments').delete().eq('loan_id', loanId)
+
+  // 5. Delete loan
+  const { error } = await supabase.from('loans').delete().eq('id', loanId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/(dashboard)/pinjaman')
+  return { success: true }
+}
+
 export async function deleteInstallment(id: string) {
   const supabase = await createClient()
   
